@@ -59,7 +59,7 @@ public class Day11 {
             if (++laps % 100000 == 0) {
                 long timeSpent = System.currentTimeMillis() - startTime;
                 print("Testing " + state + " with history: " + seenSolutions.get(state).size() +
-                        " Seen solutions: " + seenSolutions.size() + " States to try: " + statesToTry.size() +
+                        " Seen states: " + seenSolutions.size() + " States to try: " + statesToTry.size() +
                         " Laps: " + laps + " (" + laps * 1000 / timeSpent + "/s)");
             }
             List<Move> validMoves = state.calculateValidMoves();
