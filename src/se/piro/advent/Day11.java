@@ -1,9 +1,6 @@
 package se.piro.advent;
 
-import java.util.ArrayList;
-import java.util.Hashtable;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by Rolf Staflin 2016-12-11 11:11
@@ -12,8 +9,11 @@ public class Day11 {
 
     State ILLEGAL_STATE = new State();
 
-    LinkedList<State> shortestSolution = null;
-    int shortestLength = 16000;
+    SortedMap<Integer, LinkedList<State>> statesToExpand = new TreeMap<>();
+
+    HashSet<String> expandedStates = new HashSet<>();
+    State solution = null;
+    int shortestLength = 34;
 
     public void print(String s) {
         System.out.println(s);
@@ -31,93 +31,101 @@ public class Day11 {
 
 
     private void go() {
-        LinkedList<State> previousStates = new LinkedList<>();
         final State startState = makeStartState();
-        previousStates.add(startState);
-
-        //recurse(previousStates);
-        widthFirstSearch(startState);
+        heuristicSearch(startState);
 
         print("Shortest solution is " + shortestLength + " moves:");
-        for (int i = shortestSolution.size() - 1; i >= 0; i--) {
-            print(shortestSolution.get(i).toString());
+        print(solution.toString());
+        for (int i = solution.history.size() - 1; i >= 0; i--) {
+            print(solution.history.get(i).toString());
         }
     }
 
-    Hashtable<State, LinkedList<State>> seenSolutions = new Hashtable<>();
-    LinkedList<State> statesToTry = new LinkedList<>();
+    void heuristicSearch(State startState) {
+        LinkedList<State> linkedList = new LinkedList<>();
+        linkedList.add(startState);
+        statesToExpand.put(startState.getScore(), linkedList);
 
-    void widthFirstSearch(State startState) {
-        statesToTry.add(startState);
-        seenSolutions.put(startState, new LinkedList<>());
-
-        long startTime = System.currentTimeMillis();
-        boolean solutionFound = false;
-        long laps = 0;
-        while (!solutionFound) {
-            State state = statesToTry.pop();
+        int laps = 0;
+        while (!statesToExpand.isEmpty()) {
+            State state = getNextStateToTry();
+            expandedStates.add(state.toString());
             if (++laps % 100000 == 0) {
-                long timeSpent = System.currentTimeMillis() - startTime;
-                print("Testing " + state + " with history: " + seenSolutions.get(state).size() +
-                        " Seen states: " + seenSolutions.size() + " States to try: " + statesToTry.size() +
-                        " Laps: " + laps + " (" + laps * 1000 / timeSpent + "/s)");
+                long statesLeft = 0;
+                for (LinkedList<State> stateList: statesToExpand.values()) {
+                    statesLeft += stateList.size();
+                }
+                print("" + laps + " laps, " + statesLeft + " states left to expand");
             }
+
             List<Move> validMoves = state.calculateValidMoves();
             for (Move move : validMoves) {
                 State newState = state.makeMove(move);
+
                 if (newState.isEndState()) {
-                    solutionFound = true;
-                    LinkedList<State> newStatePath = new LinkedList<>();
-                    newStatePath.addAll(seenSolutions.get(state));
-                    newStatePath.add(state);
-                    recordEndState(newStatePath, newState);
-                } else if (newState.isLegal() && !seenSolutions.keySet().contains(newState)) {
-                    LinkedList<State> newStatePath = new LinkedList<>();
-                    newStatePath.addAll(seenSolutions.get(state));
-                    newStatePath.add(state);
-                    seenSolutions.put(newState, newStatePath);
-                    statesToTry.add(newState);
+                    recordEndState(newState);
+                } else if (newState.isLegal() && newState.history.size() < shortestLength - 1 && !expandedStates.contains(newState.toString())) {
+                    saveState(newState);
                 }
             }
         }
     }
 
-    private void recurse(LinkedList<State> states) {
-
-        final int stateSize = states.size();
-        // print("Recurse: " + states.size());
-        // We've already found a shorter solution.
-        if (stateSize >= shortestLength) {
-            return;
+    private void saveState(State state) {
+        int score = state.getScore();
+        LinkedList<State> queuedStates = statesToExpand.get(score);
+        if (queuedStates == null) {
+            queuedStates = new LinkedList<>();
+            statesToExpand.put(score, queuedStates);
         }
-
-        State currentState = states.peek();
-        List<Move> validMoves = currentState.calculateValidMoves();
-        for (Move move : validMoves) {
-            State newState = currentState.makeMove(move);
-            if (newState.isEndState()) {
-                recordEndState(states, newState);
-            } else if (newState.isLegal() && !states.contains(newState)) {
-                LinkedList<State> newStates = new LinkedList<>();
-                newStates.addAll(states);
-                newStates.push(newState);
-                recurse(newStates);
-            }
+        if (!queuedStates.contains(state)) {
+            queuedStates.add(state);
         }
     }
 
-    private void recordEndState(LinkedList<State> states, State goalState) {
-        final int solutionLength = states.size();
+
+    public State getNextStateToTry() {
+        int lowestScore = statesToExpand.firstKey();
+        LinkedList<State> states = statesToExpand.get(lowestScore);
+
+        State nextState = states.pop();
+        // print("Trying " + nextState.toString());
+        if (states.isEmpty()) {
+            // print("No more states with score " + lowestScore);
+            statesToExpand.remove(lowestScore);
+        }
+        return nextState;
+    }
+
+    private void recordEndState(State goalState) {
+        final int solutionLength = goalState.history.size();
+        print("Reached goal after " + solutionLength + " moves!");
         if (solutionLength < shortestLength) {
             shortestLength = solutionLength;
-            shortestSolution = new LinkedList<>();
-            shortestSolution.addAll(states);
-            shortestSolution.push(goalState);
-            print("Reached goal after " + solutionLength + " moves!");
+            solution = goalState;
+
+            List<Integer> valuesToRemove = new ArrayList<>();
+            // Clean out uninteresting states from statesToExpand
+            for (int score: statesToExpand.keySet()) {
+                final LinkedList<State> states = statesToExpand.get(score);
+                states.removeIf(state -> state.history.size() > shortestLength - 2);
+                if (states.isEmpty()) {
+                    valuesToRemove.add(score);
+                }
+            }
+            for (int score : valuesToRemove) {
+                statesToExpand.remove(score);
+            }
+
+            print(solution.toString());
+            for (int i = solution.history.size() - 1; i >= 0; i--) {
+                print(solution.history.get(i).toString());
+            }
+
         }
     }
 
-    /////////////
+    //--------------------------------------------------------------------------
 
     class State {
         int elevatorFloor = 1;
@@ -126,6 +134,15 @@ public class Day11 {
         Floor f2 = new Floor();
         Floor f1 = new Floor();
 
+        LinkedList<State> history = new LinkedList<>();
+
+        // The score is used for the heuristic - try states with lower scores first.
+        // The scorer here is the number of objects on each floor times the distance between the floor and floor 4.
+        int getScore() {
+            return  (f3.things.size() +
+                2 * f2.things.size() +
+                3 * f1.things.size());
+        }
 
         boolean isEndState() {
             return elevatorFloor == 4 && f1.isEmpty() && f2.isEmpty() && f3.isEmpty();
@@ -142,6 +159,7 @@ public class Day11 {
             copy.f2.things.addAll(f2.things);
             copy.f3.things.addAll(f3.things);
             copy.f4.things.addAll(f4.things);
+            copy.history.addAll(history);
             return copy;
         }
 
@@ -188,6 +206,8 @@ public class Day11 {
 
         State makeMove(Move move) {
             State newState = this.copy();
+            newState.history.add(this);
+
             newState.currentFloor().elevatorLeaving(move.load);
             if (move.direction == Direction.Up) {
                 newState.elevatorFloor++;
@@ -201,12 +221,12 @@ public class Day11 {
 
         @Override
         public String toString() {
-            return "State{" +
-                    "elevatorFloor=" + elevatorFloor +
-                    ", f4=" + f4 +
-                    ", f3=" + f3 +
-                    ", f2=" + f2 +
-                    ", f1=" + f1 +
+            return "State " + getScore() + " {" +
+                    "e = " + elevatorFloor +
+                    ", f4 " + f4 +
+                    ", f3 " + f3 +
+                    ", f2 " + f2 +
+                    ", f1 " + f1 +
                     '}';
         }
 
@@ -455,6 +475,7 @@ public class Day11 {
         ILLEGAL
     }
 
+    @SuppressWarnings("unused")
     private State makeTestStartState() {
         State startState = new State();
 
