@@ -1,6 +1,9 @@
 package se.piro.advent;
 
 import java.util.*;
+import java.util.stream.Collectors;
+
+import static java.util.Comparator.comparing;
 
 /**
  * Created by Rolf Staflin 2016-12-11 11:11
@@ -33,7 +36,7 @@ public class Day11 {
 
     private void go() {
         final State startState = makeStartState();
-        limitedDepthFirstSearch(startState);
+        limitedDepthFirstSearchWithHeuristics(startState);
 
         print("Shortest solution is " + shortestLength + " moves:");
         print(solution.toString());
@@ -44,11 +47,12 @@ public class Day11 {
 
     long laps = 0;
 
-    void limitedDepthFirstSearch(State state) {
+    void limitedDepthFirstSearchWithHeuristics(State state) {
         if (++laps % 100000 == 0) {
             print(laps + " laps. Expanded " + expandedStates.size() + " solutions.");
         }
         List<Move> validMoves = state.calculateValidMoves();
+        List<State> statesToRecurseOver = new ArrayList<>();
         for (Move move : validMoves) {
             State newState = state.makeMove(move);
 
@@ -59,10 +63,12 @@ public class Day11 {
                 Integer savedStateHistoryLength = expandedStates.get(newState.toString());
                 if (savedStateHistoryLength == null || savedStateHistoryLength > newState.history.size()) {
                     expandedStates.put(newState.toString(), newState.history.size());
-                    limitedDepthFirstSearch(newState);
+                    statesToRecurseOver.add(newState);
                 }
             }
         }
+        List<State> sortedStates = statesToRecurseOver.stream().sorted(comparing(State::getScore)).collect(Collectors.toList());
+        sortedStates.forEach(this::limitedDepthFirstSearchWithHeuristics);
     }
 
     private void recordEndState(State goalState) {
