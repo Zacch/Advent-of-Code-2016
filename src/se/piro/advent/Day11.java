@@ -11,7 +11,8 @@ public class Day11 {
 
     SortedMap<Integer, LinkedList<State>> statesToExpand = new TreeMap<>();
 
-    HashSet<String> expandedStates = new HashSet<>();
+    // A map from the string representation of a state to the length of its history.
+    Map<String, Integer> expandedStates = new HashMap<>();
     State solution = null;
     int shortestLength = 34;
 
@@ -32,7 +33,7 @@ public class Day11 {
 
     private void go() {
         final State startState = makeStartState();
-        heuristicSearch(startState);
+        limitedDepthFirstSearch(startState);
 
         print("Shortest solution is " + shortestLength + " moves:");
         print(solution.toString());
@@ -41,60 +42,27 @@ public class Day11 {
         }
     }
 
-    void heuristicSearch(State startState) {
-        LinkedList<State> linkedList = new LinkedList<>();
-        linkedList.add(startState);
-        statesToExpand.put(startState.getScore(), linkedList);
+    long laps = 0;
 
-        int laps = 0;
-        while (!statesToExpand.isEmpty()) {
-            State state = getNextStateToTry();
-            expandedStates.add(state.toString());
-            if (++laps % 100000 == 0) {
-                long statesLeft = 0;
-                for (LinkedList<State> stateList: statesToExpand.values()) {
-                    statesLeft += stateList.size();
-                }
-                print("" + laps + " laps, " + statesLeft + " states left to expand");
-            }
+    void limitedDepthFirstSearch(State state) {
+        if (++laps % 100000 == 0) {
+            print(laps + " laps. Expanded " + expandedStates.size() + " solutions.");
+        }
+        List<Move> validMoves = state.calculateValidMoves();
+        for (Move move : validMoves) {
+            State newState = state.makeMove(move);
 
-            List<Move> validMoves = state.calculateValidMoves();
-            for (Move move : validMoves) {
-                State newState = state.makeMove(move);
-
-                if (newState.isEndState()) {
-                    recordEndState(newState);
-                } else if (newState.isLegal() && newState.history.size() < shortestLength - 1 && !expandedStates.contains(newState.toString())) {
-                    saveState(newState);
+            if (newState.isEndState()) {
+                recordEndState(newState);
+                return;
+            } else if (newState.isLegal() && newState.history.size() < shortestLength - 1) {
+                Integer savedStateHistoryLength = expandedStates.get(newState.toString());
+                if (savedStateHistoryLength == null || savedStateHistoryLength > newState.history.size()) {
+                    expandedStates.put(newState.toString(), newState.history.size());
+                    limitedDepthFirstSearch(newState);
                 }
             }
         }
-    }
-
-    private void saveState(State state) {
-        int score = state.getScore();
-        LinkedList<State> queuedStates = statesToExpand.get(score);
-        if (queuedStates == null) {
-            queuedStates = new LinkedList<>();
-            statesToExpand.put(score, queuedStates);
-        }
-        if (!queuedStates.contains(state)) {
-            queuedStates.add(state);
-        }
-    }
-
-
-    public State getNextStateToTry() {
-        int lowestScore = statesToExpand.firstKey();
-        LinkedList<State> states = statesToExpand.get(lowestScore);
-
-        State nextState = states.pop();
-        // print("Trying " + nextState.toString());
-        if (states.isEmpty()) {
-            // print("No more states with score " + lowestScore);
-            statesToExpand.remove(lowestScore);
-        }
-        return nextState;
     }
 
     private void recordEndState(State goalState) {
