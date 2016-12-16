@@ -1,9 +1,6 @@
 package se.piro.advent;
 
 import java.util.*;
-import java.util.stream.Collectors;
-
-import static java.util.Comparator.comparing;
 
 /**
  * Created by Rolf Staflin 2016-12-11 11:11
@@ -14,10 +11,9 @@ public class Day11 {
 
     SortedMap<Integer, LinkedList<State>> statesToExpand = new TreeMap<>();
 
-    // A map from the string representation of a state to the length of its history.
     Map<String, Integer> expandedStates = new HashMap<>();
     State solution = null;
-    int shortestLength = 34;
+    int shortestLength = 60;
 
     public void print(String s) {
         System.out.println(s);
@@ -36,7 +32,7 @@ public class Day11 {
 
     private void go() {
         final State startState = makeStartState();
-        limitedDepthFirstSearchWithHeuristics(startState);
+        heuristicSearch(startState);
 
         print("Shortest solution is " + shortestLength + " moves:");
         print(solution.toString());
@@ -45,30 +41,63 @@ public class Day11 {
         }
     }
 
-    long laps = 0;
+    void heuristicSearch(State startState) {
+        LinkedList<State> linkedList = new LinkedList<>();
+        linkedList.add(startState);
+        statesToExpand.put(startState.getScore(), linkedList);
 
-    void limitedDepthFirstSearchWithHeuristics(State state) {
-        if (++laps % 100000 == 0) {
-            print(laps + " laps. Expanded " + expandedStates.size() + " solutions.");
-        }
-        List<Move> validMoves = state.calculateValidMoves();
-        List<State> statesToRecurseOver = new ArrayList<>();
-        for (Move move : validMoves) {
-            State newState = state.makeMove(move);
+        int laps = 0;
+        while (!statesToExpand.isEmpty()) {
+            State state = getNextStateToTry();
+            expandedStates.put(state.toString(), state.history.size());
+            if (++laps % 100000 == 0) {
+                long statesLeft = 0;
+                for (LinkedList<State> stateList: statesToExpand.values()) {
+                    statesLeft += stateList.size();
+                }
+                print("" + laps + " laps, " + statesLeft + " states left to expand");
+            }
 
-            if (newState.isEndState()) {
-                recordEndState(newState);
-                return;
-            } else if (newState.isLegal() && newState.history.size() < shortestLength - 1) {
-                Integer savedStateHistoryLength = expandedStates.get(newState.toString());
-                if (savedStateHistoryLength == null || savedStateHistoryLength > newState.history.size()) {
-                    expandedStates.put(newState.toString(), newState.history.size());
-                    statesToRecurseOver.add(newState);
+            List<Move> validMoves = state.calculateValidMoves();
+            for (Move move : validMoves) {
+                State newState = state.makeMove(move);
+
+                if (newState.isEndState()) {
+                    recordEndState(newState);
+                } else if (newState.isLegal() && newState.history.size() < shortestLength - 1) {
+                    Integer existingHistoryLength = expandedStates.get(newState.toString());
+                    if (existingHistoryLength == null || newState.history.size() < existingHistoryLength) {
+                        saveState(newState);
+                   }
                 }
             }
         }
-        List<State> sortedStates = statesToRecurseOver.stream().sorted(comparing(State::getScore)).collect(Collectors.toList());
-        sortedStates.forEach(this::limitedDepthFirstSearchWithHeuristics);
+    }
+
+    private void saveState(State state) {
+        int score = state.getScore();
+        LinkedList<State> queuedStates = statesToExpand.get(score);
+        if (queuedStates == null) {
+            queuedStates = new LinkedList<>();
+            statesToExpand.put(score, queuedStates);
+        }
+        if (!queuedStates.contains(state)) {
+            queuedStates.add(state);
+        }
+    }
+
+
+    public State getNextStateToTry() {
+        int lowestScore = statesToExpand.firstKey();
+        LinkedList<State> states = statesToExpand.get(lowestScore);
+
+        State nextState = states.pop();
+        // print("Trying " + nextState.toString());
+        if (states.isEmpty()) {
+            // print("No more states with score " + lowestScore);
+            statesToExpand.remove(lowestScore);
+        }
+        return nextState;
     }
 
     private void recordEndState(State goalState) {
@@ -446,6 +475,8 @@ public class Day11 {
         Strontium,
         Promethium,
         Ruthenium,
+        Elerium,
+        Dilithium,
         ILLEGAL
     }
 
@@ -478,6 +509,10 @@ public class Day11 {
         startState.f1.things.add(new Thing(Material.Thulium, Type.Microchip));
         startState.f1.things.add(new Thing(Material.Plutonium, Type.Generator));
         startState.f1.things.add(new Thing(Material.Strontium, Type.Generator));
+        startState.f1.things.add(new Thing(Material.Elerium, Type.Generator));
+        startState.f1.things.add(new Thing(Material.Elerium, Type.Microchip));
+        startState.f1.things.add(new Thing(Material.Dilithium, Type.Generator));
+        startState.f1.things.add(new Thing(Material.Dilithium, Type.Microchip));
 
         // The second floor contains a plutonium-compatible microchip and a strontium-compatible microchip.
 
