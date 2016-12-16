@@ -26,7 +26,16 @@ public class Day11 {
 
     public static void main(String[] args) {
         Day11 day = new Day11();
-        day.go();
+        final State startState1 = day.makeStartState1();
+
+        day.print(" -------- Part 1 -------- ");
+        day.go(startState1);
+
+        day.print(" -------- Part 2 -------- ");
+        day = new Day11();
+        final State startState2 = day.makeStartState2();
+        day.go(startState2);
+
     }
 
     Day11() {
@@ -35,8 +44,7 @@ public class Day11 {
     }
 
 
-    private void go() {
-        final State startState = makeStartState();
+    private void go(State startState) {
         heuristicSearch(startState);
 
         print("The shortest solution is " + shortestLength + " moves.");
@@ -62,7 +70,7 @@ public class Day11 {
             }
             if (++laps % 100000 == 0) {
                 long statesLeft = 0;
-                for (LinkedList<State> stateList: statesToExpand.values()) {
+                for (LinkedList<State> stateList : statesToExpand.values()) {
                     statesLeft += stateList.size();
                 }
                 print("" + FORMAT.format(laps) + " iterations, " +
@@ -130,7 +138,7 @@ public class Day11 {
 
             // Clean out uninteresting states from statesToExpand
             List<Integer> valuesToRemove = new ArrayList<>();
-            for (int score: statesToExpand.keySet()) {
+            for (int score : statesToExpand.keySet()) {
                 final LinkedList<State> states = statesToExpand.get(score);
                 states.removeIf(state -> state.history.size() > shortestLength - 2);
                 if (states.isEmpty()) {
@@ -166,7 +174,7 @@ public class Day11 {
         // The score is used for the heuristic - try states with lower scores first.
         // The scorer here is the number of objects on each floor times the distance between the floor and floor 4.
         int getScore() {
-            return  (f3.getScore() +
+            return (f3.getScore() +
                     2 * f2.getScore() +
                     3 * f1.getScore());
         }
@@ -196,11 +204,16 @@ public class Day11 {
 
         Floor getFloor(int floor) {
             switch (floor) {
-                case 1: return f1;
-                case 2: return f2;
-                case 3: return f3;
-                case 4: return f4;
-                default: throw new RuntimeException("Illegal!");
+                case 1:
+                    return f1;
+                case 2:
+                    return f2;
+                case 3:
+                    return f3;
+                case 4:
+                    return f4;
+                default:
+                    throw new RuntimeException("Illegal!");
             }
         }
 
@@ -484,7 +497,7 @@ public class Day11 {
 
         @Override
         public String toString() {
-            return "ElevatorLoad{" + first +", " + second + '}';
+            return "ElevatorLoad{" + first + ", " + second + '}';
         }
     }
 
@@ -507,6 +520,7 @@ public class Day11 {
         Up,
         Down
     }
+
     enum Type {
         Generator,
         Microchip,
@@ -544,7 +558,7 @@ public class Day11 {
         return startState;
     }
 
-    private State makeStartState() {
+    private State makeStartState1() {
         State startState = new State();
 
         /*
@@ -555,10 +569,6 @@ public class Day11 {
         startState.f1.things.add(new Thing(Material.Thulium, Type.Microchip));
         startState.f1.things.add(new Thing(Material.Plutonium, Type.Generator));
         startState.f1.things.add(new Thing(Material.Strontium, Type.Generator));
-        startState.f1.things.add(new Thing(Material.Elerium, Type.Generator));
-        startState.f1.things.add(new Thing(Material.Elerium, Type.Microchip));
-        startState.f1.things.add(new Thing(Material.Dilithium, Type.Generator));
-        startState.f1.things.add(new Thing(Material.Dilithium, Type.Microchip));
 
         // The second floor contains a plutonium-compatible microchip and a strontium-compatible microchip.
 
@@ -575,6 +585,23 @@ public class Day11 {
         startState.f3.things.add(new Thing(Material.Ruthenium, Type.Microchip));
 
         // The fourth floor contains nothing relevant.
+        return startState;
+    }
+
+    /*
+    Upon entering the isolated containment area, however, you notice some extra parts on the first floor that weren't listed on the record outside:
+
+    An elerium generator.
+    An elerium-compatible microchip.
+    A dilithium generator.
+    A dilithium-compatible microchip.
+     */
+    private State makeStartState2() {
+        State startState = makeStartState1();
+        startState.f1.things.add(new Thing(Material.Elerium, Type.Generator));
+        startState.f1.things.add(new Thing(Material.Elerium, Type.Microchip));
+        startState.f1.things.add(new Thing(Material.Dilithium, Type.Generator));
+        startState.f1.things.add(new Thing(Material.Dilithium, Type.Microchip));
         return startState;
     }
 }
