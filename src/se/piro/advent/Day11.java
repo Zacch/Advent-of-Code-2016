@@ -16,7 +16,7 @@ public class Day11 {
 
     Map<String, Integer> expandedStates = new HashMap<>();
     State solution = null;
-    int shortestLength = 57;
+    int shortestLength = 60;
 
     static final NumberFormat FORMAT = NumberFormat.getInstance();
 
@@ -39,11 +39,7 @@ public class Day11 {
         final State startState = makeStartState();
         heuristicSearch(startState);
 
-        print("Shortest solution is " + shortestLength + " moves:");
-        print(solution.toString());
-        for (int i = solution.history.size() - 1; i >= 0; i--) {
-            print(solution.history.get(i).toString());
-        }
+        print("The shortest solution is " + shortestLength + " moves.");
     }
 
     void heuristicSearch(State startState) {
@@ -100,7 +96,14 @@ public class Day11 {
             queuedStates = new LinkedList<>();
             statesToExpand.put(score, queuedStates);
         }
-        if (!queuedStates.contains(state)) {
+        if (queuedStates.contains(state)) {
+            State queuedState = queuedStates.get(queuedStates.indexOf(state));
+            if (queuedState.history.size() > state.history.size()) {
+                // We've found a shorter path to the state than before
+                queuedStates.remove(queuedState);
+                queuedStates.add(state);
+            }
+        } else {
             queuedStates.add(state);
         }
     }
@@ -111,9 +114,7 @@ public class Day11 {
         LinkedList<State> states = statesToExpand.get(lowestScore);
 
         State nextState = states.pop();
-        // print("Trying " + nextState.toString());
         if (states.isEmpty()) {
-            // print("No more states with score " + lowestScore);
             statesToExpand.remove(lowestScore);
         }
         return nextState;
@@ -125,9 +126,10 @@ public class Day11 {
         if (solutionLength < shortestLength) {
             shortestLength = solutionLength;
             solution = goalState;
+            printSolution();
 
-            List<Integer> valuesToRemove = new ArrayList<>();
             // Clean out uninteresting states from statesToExpand
+            List<Integer> valuesToRemove = new ArrayList<>();
             for (int score: statesToExpand.keySet()) {
                 final LinkedList<State> states = statesToExpand.get(score);
                 states.removeIf(state -> state.history.size() > shortestLength - 2);
@@ -138,13 +140,16 @@ public class Day11 {
             for (int score : valuesToRemove) {
                 statesToExpand.remove(score);
             }
-
-            print(solution.toString());
-            for (int i = solution.history.size() - 1; i >= 0; i--) {
-                print(solution.history.get(i).toString());
-            }
-
         }
+    }
+
+    private void printSolution() {
+        print(solution.toString());
+        print("\nHistory");
+        for (int i = 0; i < solution.history.size(); i++) {
+            print(" " + (i < 9 ? " " : "") + (i + 1) + " " + solution.history.get(i).toString());
+        }
+        print("");
     }
 
     //--------------------------------------------------------------------------
@@ -243,13 +248,13 @@ public class Day11 {
 
         @Override
         public String toString() {
-            return "State " + getScore() + " {" +
+            return "{" +
                     "e = " + elevatorFloor +
                     ", f4 " + f4 +
                     ", f3 " + f3 +
                     ", f2 " + f2 +
                     ", f1 " + f1 +
-                    '}';
+                    "} with score " + getScore();
         }
 
         @Override
@@ -479,10 +484,7 @@ public class Day11 {
 
         @Override
         public String toString() {
-            return "ElevatorLoad{" +
-                    "first=" + first +
-                    ", second=" + second +
-                    '}';
+            return "ElevatorLoad{" + first +", " + second + '}';
         }
     }
 
@@ -493,6 +495,11 @@ public class Day11 {
         public Move(Direction direction, ElevatorLoad load) {
             this.direction = direction;
             this.load = load;
+        }
+
+        @Override
+        public String toString() {
+            return "Move " + direction + ", " + load;
         }
     }
 
