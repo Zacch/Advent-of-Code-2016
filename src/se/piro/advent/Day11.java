@@ -1,9 +1,12 @@
 package se.piro.advent;
 
+import java.text.NumberFormat;
 import java.util.*;
 
 /**
  * Created by Rolf Staflin 2016-12-11 11:11
+ *
+ * This one needs a lot of memory. Run with options "-Xms8192m -Xmx10240m -verbose:gc" for example.
  */
 public class Day11 {
 
@@ -13,7 +16,9 @@ public class Day11 {
 
     Map<String, Integer> expandedStates = new HashMap<>();
     State solution = null;
-    int shortestLength = 60;
+    int shortestLength = 57;
+
+    static final NumberFormat FORMAT = NumberFormat.getInstance();
 
     public void print(String s) {
         System.out.println(s);
@@ -47,15 +52,28 @@ public class Day11 {
         statesToExpand.put(startState.getScore(), linkedList);
 
         int laps = 0;
+        long lastTime = System.currentTimeMillis();
         while (!statesToExpand.isEmpty()) {
             State state = getNextStateToTry();
-            expandedStates.put(state.toString(), state.history.size());
+
+            Integer oldHistoryLength = expandedStates.get(state.toString());
+
+            // Skip this state if we have already expanded it (unless this state's history is shorter than the recorded one)
+            while (oldHistoryLength != null && state.history.size() >= oldHistoryLength) {
+                print(state.toString() + " already existed. Old length " + oldHistoryLength + ", new length " + state.history.size());
+                state = getNextStateToTry();
+                oldHistoryLength = expandedStates.get(state.toString());
+            }
             if (++laps % 100000 == 0) {
                 long statesLeft = 0;
                 for (LinkedList<State> stateList: statesToExpand.values()) {
                     statesLeft += stateList.size();
                 }
-                print("" + laps + " laps, " + statesLeft + " states left to expand");
+                print("" + FORMAT.format(laps) + " iterations, " +
+                        FORMAT.format(expandedStates.size()) + " expanded states (lap time " +
+                        ((System.currentTimeMillis() - lastTime) / 1000d) + " seconds). " +
+                        statesLeft + " states left to expand. Lowest bucket: " + statesToExpand.firstKey());
+                lastTime = System.currentTimeMillis();
             }
 
             List<Move> validMoves = state.calculateValidMoves();
@@ -68,9 +86,10 @@ public class Day11 {
                     Integer existingHistoryLength = expandedStates.get(newState.toString());
                     if (existingHistoryLength == null || newState.history.size() < existingHistoryLength) {
                         saveState(newState);
-                   }
+                    }
                 }
             }
+            expandedStates.put(state.toString(), state.history.size());
         }
     }
 
@@ -142,9 +161,9 @@ public class Day11 {
         // The score is used for the heuristic - try states with lower scores first.
         // The scorer here is the number of objects on each floor times the distance between the floor and floor 4.
         int getScore() {
-            return  (f3.things.size() +
-                2 * f2.things.size() +
-                3 * f1.things.size());
+            return  (f3.getScore() +
+                    2 * f2.getScore() +
+                    3 * f1.getScore());
         }
 
         boolean isEndState() {
@@ -350,6 +369,7 @@ public class Day11 {
             if (load.second != NOTHING) {
                 things.add(load.second);
             }
+            Collections.sort(things);
             if (!isLegal()) {
                 throw new IllegalArgumentException("elevatorArriving(ElevatorLoad " + load + ")");
             }
@@ -386,19 +406,25 @@ public class Day11 {
             }
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.append('[');
-            for (Thing thing: things) {
-                stringBuilder.append(thing.toString()).append(' ');
-            }
+            things.forEach(t -> stringBuilder.append(t.toString()).append(' '));
             stringBuilder.deleteCharAt(stringBuilder.length() - 1);
             stringBuilder.append(']');
             return stringBuilder.toString();
+        }
+
+        public int getScore() {
+            int score = 0;
+            for (Thing thing : things) {
+                score += (thing.type == Type.Generator ? 2 : 1);
+            }
+            return score;
         }
     }
 
     //---------------------------
     public final Thing NOTHING = new Thing(Material.ILLEGAL, Type.ILLEGAL);
 
-    public class Thing {
+    public class Thing implements Comparable<Thing> {
         Type type;
         Material material;
 
@@ -426,6 +452,19 @@ public class Day11 {
         @Override
         public String toString() {
             return material.toString().substring(0, 2) + type.toString().substring(0, 1);
+        }
+
+        @Override
+        public int compareTo(Thing otherThing) {
+            if (this.equals(otherThing)) {
+                return 0;
+            }
+
+            if (this.material != otherThing.material) {
+                return this.material.compareTo(otherThing.material);
+            } else {
+                return this.type.compareTo(otherThing.type);
+            }
         }
     }
 
