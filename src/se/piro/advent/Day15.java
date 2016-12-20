@@ -20,22 +20,14 @@ public class Day15 extends Day {
     }
 
     private void go() {
-        readFile();
+        readFile("data/day15.txt");
         iterate();
 
         print("---- Part 2 -----");
         discs = new ArrayList<>();
-        readFile();
+        readFile("data/day15.txt");
         discs.add(new Disc(11, 0));
         iterate();
-    }
-
-    private void readFile() {
-        try (Stream<String> stream = Files.lines(Paths.get("data/day15.txt"))) {
-            stream.forEach(this::handleLine);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     private void iterate() {
@@ -58,7 +50,7 @@ public class Day15 extends Day {
         print("Drop the coin at time " + time);
     }
 
-    private void handleLine(String line) {
+    protected void handleLine(String line) {
         String[] tokens = line.split("[ \\.]");
         int size = Integer.parseInt(tokens[3]);
         int startPosition = Integer.parseInt(tokens[11]);

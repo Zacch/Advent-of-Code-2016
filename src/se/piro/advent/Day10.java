@@ -38,7 +38,7 @@ public class Day10 extends Day {
                 (outputs[0].chip * outputs[1].chip * outputs[2].chip));
     }
 
-    private void handleLine(String line) {
+    protected void handleLine(String line) {
         if (line.startsWith("value ")) {
             // "value 61 goes to bot 49"
             String[] args = line.substring(6).split(" goes to bot ");

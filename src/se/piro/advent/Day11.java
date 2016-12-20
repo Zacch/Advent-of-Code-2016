@@ -1,6 +1,5 @@
 package se.piro.advent;
 
-import java.text.NumberFormat;
 import java.util.*;
 
 /**
@@ -8,7 +7,7 @@ import java.util.*;
  *
  * This one needs a lot of memory. Run with options "-Xms8192m -Xmx10240m -verbose:gc" for example.
  */
-public class Day11 {
+public class Day11 extends Day {
 
     State ILLEGAL_STATE = new State();
 
@@ -18,20 +17,14 @@ public class Day11 {
     State solution = null;
     int shortestLength = 60;
 
-    static final NumberFormat FORMAT = NumberFormat.getInstance();
-
-    public void print(String s) {
-        System.out.println(s);
-    }
-
     public static void main(String[] args) {
         Day11 day = new Day11();
         final State startState1 = day.makeStartState1();
 
-        day.print(" -------- Part 1 -------- ");
+        print(" -------- Part 1 -------- ");
         day.go(startState1);
 
-        day.print(" -------- Part 2 -------- ");
+        print(" -------- Part 2 -------- ");
         day = new Day11();
         final State startState2 = day.makeStartState2();
         day.go(startState2);
