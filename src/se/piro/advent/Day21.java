@@ -110,6 +110,9 @@ public class Day21 extends Day {
                     break;
                 case INVERSE_ROTATE:
                     // Hard coded for input length of 8!
+                    if (input.length() != 8) {
+                        throw new IllegalArgumentException("Sorry, INVERSE_ROTATE only works for eight-character inputs.");
+                    }
                     final int[] rotations = {1, 1, 6, 2, 7, 3, 0, 4};
                     int positionAfterRotation = data.indexOf(instruction.c1);
                     int leftRotation = rotations[positionAfterRotation];
