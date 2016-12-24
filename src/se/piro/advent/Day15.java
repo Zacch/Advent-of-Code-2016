@@ -1,11 +1,7 @@
 package se.piro.advent;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 
 /**
  * Created by Rolf Staflin 2016-12-15 09:04
