@@ -10,7 +10,7 @@ public class Day25 extends Day {
 
     public static void main(String[] args) {
         Day25 day = new Day25();
-        print("Part 1: " + day.go());
+        print("Lowest possible value for a: " + day.go());
     }
 
     private int go() {
@@ -22,10 +22,9 @@ public class Day25 extends Day {
             cpu.a = a;
             try {
                 cpu.run();
-                print("Success! Lowest possible value for a: " + a);
                 break;
             } catch (OutputException e) {
-                print("Value " + a + " doesn't work.");
+                // print("Value " + a + " doesn't work.");
             }
         }
         return a;
@@ -47,6 +46,7 @@ public class Day25 extends Day {
         int ip;
         String[] memory;
         int nextExpectedOutput = 0;
+        int outputLength = 0;
 
         @Override
         public String toString() {
@@ -78,54 +78,24 @@ public class Day25 extends Day {
                     output(instruction);
                 }
                 if (++count == 1000000) {
+                    print("Returning after output of " + outputLength + " correct values.");
                     return;
                 }
             }
         }
 
         private void output(String[] instruction) {
-            int value;
-            switch (instruction[1].charAt(0)) {
-                case 'a':
-                    value = a;
-                    break;
-                case 'b':
-                    value = b;
-                    break;
-                case 'c':
-                    value = c;
-                    break;
-                case 'd':
-                    value = d;
-                    break;
-                default:
-                    value = Integer.parseInt(instruction[1]);
-            }
-            print("Output " + value);
+            int value = getValue(instruction[1]);
+            // print("Output " + value);
             if (value != nextExpectedOutput) {
                 throw new OutputException();
             }
+            outputLength++;
             nextExpectedOutput = 1 - nextExpectedOutput;
         }
 
         private void toggle(String[] instruction) {
-            int value;
-            switch (instruction[1].charAt(0)) {
-                case 'a':
-                    value = a;
-                    break;
-                case 'b':
-                    value = b;
-                    break;
-                case 'c':
-                    value = c;
-                    break;
-                case 'd':
-                    value = d;
-                    break;
-                default:
-                    value = Integer.parseInt(instruction[1]);
-            }
+            int value = getValue(instruction[1]);
             int targetAddress = ip + value - 1;
             String target = memory[targetAddress];
             if (target == null || target.isEmpty()) {
@@ -150,23 +120,7 @@ public class Day25 extends Day {
 
 
         private void copy(String[] instruction) {
-            int value;
-            switch (instruction[1].charAt(0)) {
-                case 'a':
-                    value = a;
-                    break;
-                case 'b':
-                    value = b;
-                    break;
-                case 'c':
-                    value = c;
-                    break;
-                case 'd':
-                    value = d;
-                    break;
-                default:
-                    value = Integer.parseInt(instruction[1]);
-            }
+            int value = getValue(instruction[1]);
             switch (instruction[2].charAt(0)) {
                 case 'a':
                     a = value;
@@ -224,26 +178,8 @@ public class Day25 extends Day {
         }
 
         private void jumpIfNonZero(String[] instruction) {
-            boolean condition;
-            switch (instruction[1].charAt(0)) {
-                case 'a':
-                    condition = (a != 0);
-                    break;
-                case 'b':
-                    condition = (b != 0);
-                    break;
-                case 'c':
-                    condition = (c != 0);
-                    break;
-                case 'd':
-                    condition = (d != 0);
-                    break;
-                default:
-                    condition = (Integer.parseInt(instruction[1]) != 0);
-                    break;
-            }
-
-            if (condition) {
+            int value = getValue(instruction[1]);
+            if (value != 0) {
                 int distance;
                 switch (instruction[2].charAt(0)) {
                     case 'a':
@@ -262,6 +198,21 @@ public class Day25 extends Day {
                         distance = Integer.parseInt(instruction[2]);
                 }
                 ip += distance - 1;
+            }
+        }
+
+        private int getValue(String register) {
+            switch (register.charAt(0)) {
+                case 'a':
+                    return a;
+                case 'b':
+                    return b;
+                case 'c':
+                    return c;
+                case 'd':
+                    return d;
+                default:
+                    return Integer.parseInt(register);
             }
         }
     }
