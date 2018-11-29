@@ -1,8 +1,6 @@
 package se.piro.advent;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -27,9 +25,167 @@ public class Day22 extends Day {
         Collections.sort(used);
         Collections.sort(free);
         part1();
-
         part2();
+        part2_2018();
     }
+
+
+    class State_2018 {
+        int empty_x;
+        int empty_y;
+        int payload_x;
+        int payload_y;
+        int length;
+
+        public State_2018() { }
+
+        public State_2018(State_2018 other) {
+            this.empty_x = other.empty_x;
+            this.empty_y = other.empty_y;
+            this.payload_x = other.payload_x;
+            this.payload_y = other.payload_y;
+            this.length = other.length + 1;
+        }
+
+        public State_2018 left() {
+            State_2018 result = new State_2018(this);
+            if (empty_x > 0) {
+                result.empty_x--;
+                if (grid[result.empty_x][result.empty_y].used > 85) {
+                    return this;
+                }
+                if (result.empty_x == result.payload_x && result.empty_y == result.payload_y) {
+                    result.payload_x++;
+                }
+            }
+            return result;
+        }
+
+        public State_2018 right() {
+            State_2018 result = new State_2018(this);
+            if (empty_x < GRID_SIZE_X - 1) {
+                result.empty_x++;
+                if (grid[result.empty_x][result.empty_y].used > 85) {
+                    return this;
+                }
+                if (result.empty_x == result.payload_x && result.empty_y == result.payload_y) {
+                    result.payload_x--;
+                }
+            }
+            return result;
+        }
+
+        public State_2018 up() {
+            State_2018 result = new State_2018(this);
+            if (empty_y > 0) {
+                result.empty_y--;
+                if (grid[result.empty_x][result.empty_y].used > 85) {
+                    return this;
+                }
+                if (result.empty_x == result.payload_x && result.empty_y == result.payload_y) {
+                    result.payload_y++;
+                }
+            }
+            return result;
+        }
+
+        public State_2018 down() {
+            State_2018 result = new State_2018(this);
+            if (empty_y < GRID_SIZE_Y - 1) {
+                result.empty_y++;
+                if (grid[result.empty_x][result.empty_y].used > 85) {
+                    return this;
+                }
+                if (result.empty_x == result.payload_x && result.empty_y == result.payload_y) {
+                    result.payload_y--;
+                }
+            }
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return "State_2018{" +
+                    "empty (" + empty_x + ", " + empty_y +
+                    "), payload (" + payload_x + ", " + payload_y +
+                    "), length " + length + "}";
+        }
+
+        @Override
+        public boolean equals(Object object) {
+            if (object instanceof State_2018) {
+                State_2018 other = (State_2018) object;
+                return empty_x == other.empty_x &&
+                        empty_y == other.empty_y &&
+                        payload_x == other.payload_x &&
+                        payload_y == other.payload_y;
+            } else {
+                return false;
+            }
+        }
+
+        @Override
+        public int hashCode() {
+            return ("" + empty_x + ", " + empty_y + ", " + payload_x + ", " + payload_y).hashCode();
+        }
+    }
+
+    private void part2_2018() {
+        print("____________________________");
+        print("Real implementation in 2018:");
+        Set<State_2018> visitedStates = new HashSet<>();
+        Set<State_2018> statesToTry = new HashSet<>();
+        Vector<State_2018> queue = new Vector<>();
+        State_2018 startState = new State_2018();
+        Arrays.stream(grid).forEach(r -> Arrays.stream(r).forEach(n -> {
+            if (n.used == 0) {
+                startState.empty_x = n.x;
+                startState.empty_y = n.y;
+            }
+        }));
+        startState.payload_x = GRID_SIZE_X - 1;
+        startState.payload_y = 0;
+        statesToTry.add(startState);
+        queue.add(startState);
+        boolean done;
+        do {
+            State_2018 nextState = queue.firstElement();
+            queue.remove(0);
+            statesToTry.remove(nextState);
+            done = search_2018(nextState, visitedStates, statesToTry, queue);
+        } while (!done);
+    }
+
+    private boolean search_2018(State_2018 startState, Set<State_2018> visitedStates, Set<State_2018> statesToTry, Vector<State_2018> queue) {
+        if (startState.payload_x == 0 && startState.payload_y == 0) {
+            print("Breadth-first search found solution in " + startState.length + " moves.");
+            return true;
+        }
+
+        visitedStates.add(startState);
+        State_2018 left = startState.left();
+        if (!visitedStates.contains(left) && !statesToTry.contains(left)) {
+            queue.add(left);
+            statesToTry.add(left);
+        }
+        State_2018 right = startState.right();
+        if (!visitedStates.contains(right) && !statesToTry.contains(right)) {
+            queue.add(right);
+            statesToTry.add(right);
+        }
+        State_2018 up = startState.up();
+        if (!visitedStates.contains(up) && !statesToTry.contains(up)) {
+            queue.add(up);
+            statesToTry.add(up);
+        }
+        State_2018 down = startState.down();
+        if (!visitedStates.contains(down) && !statesToTry.contains(down)) {
+            queue.add(down);
+            statesToTry.add(down);
+        }
+        return false;
+    }
+
 
     private void part2() {
         print("\n------------ Part 2 ------------");
